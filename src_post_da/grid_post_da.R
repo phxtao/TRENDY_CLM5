@@ -76,6 +76,32 @@ ggplot() +
 
 dev.off()
 
+summary(lm(mod ~ obs, data = current_data))
+
+current_data = data.frame(cbind(default_clm5_soc_stock, soc_mod_mean))
+colnames(current_data) = c('obs', 'mod')
+jpeg('./figures/da_soc_obs_vs_mod.jpeg', width = 10, height = 10, units = 'in', res = 300)
+ggplot() + 
+  geom_point(data = current_data, aes(x = obs, y = mod), shape = 16, size = 1.5) +
+  geom_abline(slope = 1, intercept = 0, size = 2, color = 'blue') + 
+  geom_smooth(data = current_data, aes(x = obs, y = mod), color = 'red', fill = 'red', size = 2, linetype = 'longdash', method = 'lm') + 
+  scale_y_continuous(position = 'left') +
+  theme_classic() +
+  # theme(legend.position = 'None') + 
+  theme(legend.justification = c(0, 1), legend.position = c(0, 1), legend.background = element_rect(fill = NA), legend.text.align = 0) +
+  theme(legend.text = element_text(size = 30), legend.title = element_text(size = 25))  +
+  theme(legend.key = element_rect(color = NA, fill = NA), legend.key.size = unit(1, 'inch')) +
+  # add title
+  labs(title = '', x = expression(paste('SOC Default CLM5 (g C m'^'-2', ')', sep = '')), y = expression(paste('SOC DA CLM5 (g C m'^'-2', ')', sep = ''))) +
+  # modify the position of title
+  # modify the font sizea
+  theme(plot.title = element_text(hjust = 0.8, vjust = -40, size = 30)) + 
+  theme(axis.title = element_text(size = 32), axis.line = element_line(size = 1), axis.ticks = element_line(size = 1)) +
+  # modify the margin
+  theme(plot.margin = unit(c(0, 0.4, 0.1, 0.1), 'inch')) +
+  theme(axis.text = element_text(size=35)) 
+
+dev.off()
 ####################################################
 # DA results posterior para
 ####################################################
