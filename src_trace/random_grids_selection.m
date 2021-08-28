@@ -47,6 +47,7 @@ end
 world_land_mask = ncread([input_data_path, 'TRENDY2020_S3_CO2ClimateLUC_Matrix.clm2.h0.TOTSOMC_1m.170001-201912.nc'], 'landmask');
 world_land_mask(:, (lat_grid < -56 | lat_grid > 80)) = 0;
 
+nbedrock = ncread([input_data_path, 'TRENDY2020_S3_CO2ClimateLUC_Matrix.clm2.h0.TOTSOMC_1m.170001-201912.nc'], 'nbedrock');
 
 % gpp info unit: gc/m2/s
 gpp_data_origin = ncread([input_data_path, 'TRENDY2020_S3_CO2ClimateLUC_Matrix.clm2.h0.GPP.170001-201912.nc'], 'GPP');
@@ -83,6 +84,8 @@ for isample = 1:sample_size
     valid_grid_index = find(gpp_data_1700 > 50 & gpp_data_1700 < quantile(gpp_data_1700, 0.99, 'all') & world_land_mask == 1);
 end
 
+nbedrock = nbedrock(select_sample_index(:, 1));
+save([input_data_path, 'nbedrock_grid.mat'], 'nbedrock');
 
 site_label = cell(sample_size, 1);
 for isite = 1:sample_size
@@ -110,4 +113,5 @@ fig.PaperPosition = [0 0 12 5];
 
 print([fig_data_path, 'sample_grid_dist.tif'], '-dtiffn', '-r300')
 close
+
 

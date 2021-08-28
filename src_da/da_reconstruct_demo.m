@@ -1,5 +1,5 @@
-% clear;
-% clc;
+clear;
+clc;
 %%
 
 warning('off');
@@ -9,16 +9,12 @@ disp([datestr(now,'HH:MM:SS'), ' programme started'])
 
 grid_num = 7;
 
-
-% model_src_dir = '/Users/phoenix/Google_Drive/Tsinghua_Luo/Projects/TRENDY_CLM5/src_clm_cen';
-model_src_dir = '/GFPS8p/cess11/taof/trendy_clm5/src_clm_cen';
+% model_src_dir = '/Users/phoenix/Google_Drive/Tsinghua_Luo/Projects/RADIOCARBON/demo_harvard_forest/src_clm_cen';
+model_src_dir = '/Users/phoenix/Google_Drive/Tsinghua_Luo/Projects/TRENDY_CLM5/src_clm_cen';
 cd(model_src_dir)
 
 % mac
-% data_path = '/Users/phoenix/Google_Drive/Tsinghua_Luo/Projects/DATAHUB/';
-
-% server 
-data_path = '/GFPS8p/cess11/taof/datahub/';
+data_path = '/Users/phoenix/Google_Drive/Tsinghua_Luo/Projects/DATAHUB/';
 
 %% simulations from CLM5
 cesm2_case_name = 'sasu_f05_g16_checked_step4';
@@ -75,9 +71,9 @@ soil_decom_num = 20;
 
 %% Simulation input
 year_start = 1900;
-year_end = 2010;
+year_end = 1901; %2010;
 
-soc_time_series = (year_start:(year_end-year_start)/((year_end-year_start+1)*12-1):year_end)';
+soc_time_series = (year_start+1/12:1/12:(year_end+1))';
 
 % load simulation from CESM2 (steady state)
 load([data_path, 'radiocarbon/demo_harvard_forest/input_data/forcing_steady_state_harvard_forest.mat']);
@@ -85,7 +81,7 @@ load([data_path, 'radiocarbon/demo_harvard_forest/input_data/forcing_steady_stat
 % load simulation from CESM2 (transient)
 load([data_path, 'radiocarbon/demo_harvard_forest/input_data/forcing_transient_harvard_forest.mat']);
 
-obs_tot_soc = reshape(frocing_transient.soc_stock, [length(soc_time_series), 1]);
+obs_tot_soc = reshape(frocing_transient.soc_stock(:, 1:length(year_start:year_end)), [length(soc_time_series), 1]);
 %% Data Assimilation - initiation
 % Parameter names and their initial values in MCMC
 para_name = {'diffus'; 'cryo';...
@@ -117,9 +113,9 @@ disp([datestr(now,'HH:MM:SS'), ' MCMC started'])
 %     try
 is_second_time = 0;
 % Predefine the size of some coefficients
-nsimu1 = 10000;
-nsimu2 = 50000;
-nparallel = 1;
+nsimu1 = 500;
+nsimu2 = 1000;
+nparallel = 3;
 
 parameters_rec1 = nan(nparallel, npara, nsimu1);
 parameters_rec2 = nan(nparallel, npara, nsimu2);
@@ -244,7 +240,7 @@ while iparallel <= nparallel
         simu = simu + 1;
         
         if simu == nsimu1 && is_second_time == 0
-            if upgrade1(iparallel, 1) < 1
+            if upgrade1(iparallel, 1) < 10
                 counter1 = counter1 + 1;
                 simu = 1;
                 upgrade1(iparallel, 1) = 0;
@@ -268,7 +264,7 @@ while iparallel <= nparallel
     %----------------------------------------
     % Part 2: MCMC run with updating covariances
     %----------------------------------------
-    sd_controling_factor = 1.4; % default to be 2.4^2
+    sd_controling_factor = 2.4; % default to be 2.4^2
     sd = sd_controling_factor/npara;
     epsilon = 0;
     covars=sd*cov(reshape(parameters_rec1(iparallel, :, 1:nsimu1), [npara, length(1:nsimu1)])') + sd*epsilon*diag(ones(npara, 1));
@@ -378,11 +374,11 @@ while iparallel <= nparallel
             da_summary.soc_mod_trace = soc_mod_trace;
             da_summary.parameters_keep2 = parameters_keep2;
             
-            save([data_path, 'trendy_clm5/output_data/da_reconstruct/clm5_HF_point_reconstruct_', num2str(iworker), '.mat'], 'da_summary')
+            save([data_path, 'TRENDY_CLM5/output_data/da_reconstruct/clm5_HF_point_reconstruct.mat'], 'da_summary')
         end
         % to test if the acceptance rate is in a resonable level
         if simu == nsimu2
-            if coef < 0 || coef > 1 % coef < 0.1 || coef > 0.5
+            if coef < 0.1 || coef > 0.5
                 ifbreak2 = 1;
                 counter2 = counter2 + 1;
                 
@@ -406,4 +402,53 @@ while iparallel <= nparallel
     end
 end
 disp([datestr(now,'HH:MM:SS'), ' MCMC has been finished']);
+
+
+%% Gelman-Rubin test
+GR = nan(npara, 1);
+between_var = nan(npara, 1);
+within_var = nan(npara, 1);
+for ipara = 1 : npara
+    para_mean = nan(nparallel, 1);
+    para_sum = nan(nparallel, 1);
+    for iparallel = 1 : nparallel
+        para_keep_middle = reshape(parameters_keep2(iparallel, 1, :), [nsimu2, 1]);
+        valid_num = length(para_keep_middle(~isnan(para_keep_middle), 1));
+        para_mean(iparallel, 1) = mean(parameters_keep2(iparallel, ipara, round(valid_num/2)+1:valid_num), 'omitnan');
+        para_sum(iparallel, 1) = sum((parameters_keep2(iparallel, ipara, round(valid_num/2)+1:valid_num) - para_mean(iparallel, 1)).^2);
+    end
+    % calculate between variance and within variance
+    between_var = ...
+        valid_num/(nparallel-1)*nansum((para_mean - mean(para_mean)).^2);
+    within_var = 1/nparallel/(valid_num-1)*sum(para_sum);
+    GR(ipara) = sqrt(((within_var*(valid_num-1))/valid_num + between_var/valid_num)/within_var)';
+end
+
+
+%% Coefficient of efficiency
+% set the first half number as burn-in
+valid_num = nan(nparallel, 1);
+soc_mod_parallel = nan(length(obs_tot_soc), nparallel);
+soc_std_parallel = nan(length(obs_tot_soc), nparallel);
+% col1: correlation, col2: RMSE
+stat_parallel = nan(nparallel, 1);
+for iparallel = 1 : nparallel
+    para_keep_middle = reshape(parameters_keep2(iparallel, 1, :), [nsimu2, 1]);
+    % find valid soc_modeled number
+    valid_num(iparallel, 1) = length(para_keep_middle(~isnan(para_keep_middle), 1));
+    
+    soc_mod_parallel(:, iparallel) = mean(reshape(soc_mod_trace(iparallel, round(upgrade2(iparallel, 1)/2) : upgrade2(iparallel, 1), :),...
+        [length(round(upgrade2(iparallel, 1)/2) : upgrade2(iparallel, 1)), length(obs_tot_soc)]));
+    
+    soc_std_parallel(:, iparallel) = std(reshape(soc_mod_trace(iparallel, round(upgrade2(iparallel, 1)/2) : upgrade2(iparallel, 1), :),...
+        [length(round(upgrade2(iparallel, 1)/2) : upgrade2(iparallel, 1)), length(obs_tot_soc)]));
+    
+    SStot = sum((soc_mod_parallel(:, iparallel) - mean(obs_tot_soc)).^2);
+    SSres = sum((soc_mod_parallel(:, iparallel) - obs_tot_soc).^2);
+    % R squared
+    stat_parallel(iparallel, 1) = 1 - SSres/SStot;
+end
+
+disp([datestr(now,'HH:MM:SS'), ' Program finished']);
+
 

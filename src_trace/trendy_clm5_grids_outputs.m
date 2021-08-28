@@ -21,13 +21,15 @@ for ivar = 1:length(var_name_list)
     var_name = var_name_list{ivar};
     nc_var_info = ncinfo([input_data_path, 'TRENDY2020_S3_CO2ClimateLUC_Matrix.clm2.h0.', var_name, '.170001-201912.nc'], var_name);
     var_dimension = length(nc_var_info.Size);
+     
+    disp(struct2table(nc_var_info.Attributes))
     
     for igrid = 1:length(select_sample_index(:, 1))
         disp(['processing var ', var_name, ' grid ', num2str(igrid)]);
         
         grid_lon_loc = select_sample_index(igrid, 2);
         grid_lat_loc = select_sample_index(igrid, 3);
-        if var_dimension == 3
+        if var_dimension == 3            
             var_data_origin = ncread([input_data_path, 'TRENDY2020_S3_CO2ClimateLUC_Matrix.clm2.h0.', var_name, '.170001-201912.nc'],...
                 var_name, [grid_lon_loc, grid_lat_loc, 1], [1, 1, time_size], [1, 1, 1]);
             var_data_grid = reshape(var_data_origin, [1, time_size]);
