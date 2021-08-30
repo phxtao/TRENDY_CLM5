@@ -1,6 +1,6 @@
-clear;
-clc;
-grid_num = 3;
+% clear;
+% clc;
+grid_num = 5;
 %%
 
 % worker_num = 6;
@@ -79,8 +79,8 @@ trendy_year_start = 1700;
 trendy_year_end = 2019;
 trendy_time_series = (trendy_year_start+1/month_num:1/month_num:(trendy_year_end+1))';
 
-time_loop = 3;
-time_gap = 110;
+time_loop = 320;
+time_gap = 321;
 da_year_start = 1700:(time_gap-1):2019;
 da_year_end = da_year_start+time_loop-1;
 period_num = length(da_year_start);
@@ -273,7 +273,7 @@ for iworker = 1%:worker_num
             disp([datestr(now,'HH:MM:SS'), ' upgrade1 iworker ', num2str(iworker), ': ', num2str(upgrade1), ' out of ', num2str(simu), ' cost: ', num2str(cost_new)]);
             
             % record accepted parameter values
-            parameters_keep1(:, upgrade1) = par_new;
+             parameters_keep1(:, upgrade1) = par_new;
             % record accepted values of cost function
             cost_keep1(upgrade1, 1)=cost_new;
             % update the value of parameter values

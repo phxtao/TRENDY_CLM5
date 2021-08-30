@@ -12,6 +12,8 @@ save([data_path, 'trendy_clm5/output_data/da_reconstruct/trendy_clm5_s3_point_',
 
 save([data_path, 'trendy_clm5/output_data/da_reconstruct/trendy_clm5_s3_point_', num2str(grid_num), '_reconstruct_worker_', num2str(iworker), '_cwd_mod_trace.mat'], 'cwd_mod_trace', '-v7.3');
 
+save([data_path, 'trendy_clm5/output_data/da_reconstruct/trendy_clm5_s3_point_', num2str(grid_num), '_reconstruct_worker_', num2str(iworker), '_hr_mod_trace.mat'], 'hr_mod_trace', '-v7.3');
+
 save([data_path, 'trendy_clm5/output_data/da_reconstruct/trendy_clm5_s3_point_', num2str(grid_num), '_reconstruct_worker_', num2str(iworker), '_parameters_keep2.mat'], 'parameters_keep2', '-v7.3');
 
 
