@@ -68,23 +68,23 @@ dz_node = zsoi - [0; zsoi(1:end-1)];
 %-------------------------------------
 % steady state forcing
 %-------------------------------------
-
-nbedrock_steady_state = frocing_steady_state.nbedrock;
-sand_vector_steady_state = nan;
-
-npp_mean_steady_state = frocing_steady_state.NPP;
-
-altmax_current_profile_steady_state = frocing_steady_state.ALTMAX;
-altmax_lastyear_profile_steady_state = frocing_steady_state.ALTMAX_LAST_YEAR;
-
-xio_steady_state = frocing_steady_state.O_SCALAR;
-xin_steady_state = frocing_steady_state.FPI;
-
-xit_steady_state = frocing_steady_state.T_SCALAR;
-xiw_steady_state = frocing_steady_state.W_SCALAR;
-
-npp_annual_steady_state = sum(npp_mean_steady_state.*repmat(days_per_month, [1, length(npp_mean_steady_state)/month_num])*secspday)/(length(npp_mean_steady_state)/month_num); % unit: gc/m2/year
-
+% 
+% nbedrock_steady_state = frocing_steady_state.nbedrock;
+% sand_vector_steady_state = nan;
+% 
+% npp_mean_steady_state = frocing_steady_state.NPP;
+% 
+% altmax_current_profile_steady_state = frocing_steady_state.ALTMAX;
+% altmax_lastyear_profile_steady_state = frocing_steady_state.ALTMAX_LAST_YEAR;
+% 
+% xio_steady_state = frocing_steady_state.O_SCALAR;
+% xin_steady_state = frocing_steady_state.FPI;
+% 
+% xit_steady_state = frocing_steady_state.T_SCALAR;
+% xiw_steady_state = frocing_steady_state.W_SCALAR;
+% 
+% npp_annual_steady_state = sum(npp_mean_steady_state.*repmat(days_per_month, [1, length(npp_mean_steady_state)/month_num])*secspday)/(length(npp_mean_steady_state)/month_num); % unit: gc/m2/year
+% 
 %-------------------------------------
 % transient simu forcing
 %-------------------------------------
@@ -156,114 +156,113 @@ p4cwd = 1 - p4l1 - p4l2 - p4l3;
 
 adv = 0; % parameter for advection (m/yr)
 
-%% steady state simulation
-%----------------------------------------
-% Environmental Scalar (Xi)
-%----------------------------------------
-xit = nan(n_soil_layer, month_num);
-xiw = nan(n_soil_layer, month_num);
-xin = nan(n_soil_layer, month_num);
-xio = nan(n_soil_layer, month_num);
-
-for imonth = 1:month_num
-    xit(:, imonth) = mean(xit_steady_state(:, imonth:month_num:end), 2);
-    xiw(:, imonth) = mean(xiw_steady_state(:, imonth:month_num:end), 2);
-    xin(:, imonth) = mean(xin_steady_state(:, imonth:month_num:end), 2);
-    xio(:, imonth) = mean(xio_steady_state(:, imonth:month_num:end), 2);
-end
-
-%----------------------------------------
-% Triangle Matrix, A Matrix and K Matrix
-%----------------------------------------
-sand_vector = mean(sand_vector_steady_state, 2, 'omitnan');
-% Allocation matrix
-a_ma = a_matrix(is_default, fl1s1, fl2s1, fl3s2, fs1s2, fs1s3, fs2s1, fs2s3, fs3s1, fcwdl2, sand_vector);
-
-kk_ma_middle = nan(npool_vr, npool_vr, month_num);
-tri_ma_middle = nan(npool_vr, npool_vr, month_num);
-for imonth = 1:month_num
-    % decomposition matrix
-    monthly_xit = xit(:, imonth);
-    monthly_xiw = xiw(:, imonth);
-    monthly_xio = xio(:, imonth);
-    monthly_xin = xin(:, imonth);
-    
-	monthly_xiw(monthly_xiw < 0.05) = 0.05;
-
-	kk_ma_middle(:, :, imonth) = kk_matrix(monthly_xit, monthly_xiw, monthly_xio, monthly_xin, efolding, tau4cwd, tau4l1, tau4l2, tau4l3, tau4s1, tau4s2, tau4s3);
-    % tri matrix
-    monthly_nbedrock = nbedrock_steady_state;
-    monthly_altmax_current_profile = mean(altmax_current_profile_steady_state(imonth:month_num:end));
-    monthly_altmax_lastyear_profile = mean(altmax_lastyear_profile_steady_state(imonth:month_num:end));
-    tri_ma_middle(:, :, imonth) = tri_matrix(monthly_nbedrock, monthly_altmax_current_profile, monthly_altmax_lastyear_profile, bio, adv, cryo);
-end
-tri_ma = mean(tri_ma_middle, 3, 'omitnan');
-kk_ma = mean(kk_ma_middle, 3, 'omitnan');
-
-%----------------------------------------
-% Vertical Profile
-%----------------------------------------
-% in the original beta model in Jackson et al 1996, the unit for the depth
-% of the soil is cm (dmax*100)
-
-m_to_cm = 100;
-vertical_prof = nan(n_soil_layer, 1);
-
-if mean(altmax_lastyear_profile_steady_state) > 0
-    for j = 1:n_soil_layer
-        if j == 1
-            vertical_prof(j) = (beta^((zisoi_0)*m_to_cm) - beta^(zisoi(j)*m_to_cm))/dz(j);
-        else
-            vertical_prof(j) = (beta^((zisoi(j - 1))*m_to_cm) - beta^(zisoi(j)*m_to_cm))/dz(j);
-        end
-    end
-else
-    vertical_prof(1) = 1/dz(1);
-    vertical_prof(2:end) = 0;
-end
-
-vertical_input = dz(1:n_soil_layer).*vertical_prof/sum(vertical_prof.*dz(1:n_soil_layer));
-%----------------------------------------
-% Analytical Solution of SOC
-%----------------------------------------
-matrix_in=nan(140,1);
-% total input amount
-input_tot_cwd = p4cwd*npp_annual_steady_state/days_per_year; % (gc/m2/day)
-input_tot_litter1 = p4l1*npp_annual_steady_state/days_per_year; % (gc/m2/day)
-input_tot_litter2 = p4l2*npp_annual_steady_state/days_per_year; % (gc/m2/day)
-input_tot_litter3 = p4l3*npp_annual_steady_state/days_per_year; % (gc/m2/day)
-
-% redistribution by beta
-matrix_in(1:20,1) = input_tot_cwd*vertical_input./dz(1:n_soil_layer); % litter input gc/m3/day
-matrix_in(21:40,1) = input_tot_litter1*vertical_input./dz(1:n_soil_layer);
-matrix_in(41:60,1) = input_tot_litter2*vertical_input./dz(1:n_soil_layer);
-matrix_in(61:80,1) = input_tot_litter3*vertical_input./dz(1:n_soil_layer);
-matrix_in(81:140,1) = 0;
-
-input_matrix(1:20,1) = p4cwd.*vertical_input./dz(1:n_soil_layer);
-input_matrix(21:40,1) = p4l1.*vertical_input./dz(1:n_soil_layer);
-input_matrix(41:60,1) = p4l2.*vertical_input./dz(1:n_soil_layer);
-input_matrix(61:80,1) = p4l3.*vertical_input./dz(1:n_soil_layer);
-input_matrix(81:140,1) = 0;
-
-lastwarn('');
-
-cpool_steady_state = (a_ma*kk_ma-tri_ma)\(-matrix_in);
-cpool_steady_state(cpool_steady_state < 0) = 0;
-[~, msgid] = lastwarn;
-if strcmp(msgid, 'MATLAB:singularMatrix') == 1 || strcmp(msgid, 'MATLAB:nearlySingularMatrix') == 1
-    cpools_transient = nan;
-    soc_stock_transient = nan;
-    litter_stock_transient = nan;
-    cwd_stock_transient = nan;
-    tot_hr = nan;
-    
-    return
-end
-
-initial_cpool(:, 1) = cpool_steady_state;
+% %% steady state simulation
+% %----------------------------------------
+% % Environmental Scalar (Xi)
+% %----------------------------------------
+% xit = nan(n_soil_layer, month_num);
+% xiw = nan(n_soil_layer, month_num);
+% xin = nan(n_soil_layer, month_num);
+% xio = nan(n_soil_layer, month_num);
+% 
+% for imonth = 1:month_num
+%     xit(:, imonth) = mean(xit_steady_state(:, imonth:month_num:end), 2);
+%     xiw(:, imonth) = mean(xiw_steady_state(:, imonth:month_num:end), 2);
+%     xin(:, imonth) = mean(xin_steady_state(:, imonth:month_num:end), 2);
+%     xio(:, imonth) = mean(xio_steady_state(:, imonth:month_num:end), 2);
+% end
+% 
+% %----------------------------------------
+% % Triangle Matrix, A Matrix and K Matrix
+% %----------------------------------------
+% sand_vector = mean(sand_vector_steady_state, 2, 'omitnan');
+% % Allocation matrix
+% a_ma = a_matrix(is_default, fl1s1, fl2s1, fl3s2, fs1s2, fs1s3, fs2s1, fs2s3, fs3s1, fcwdl2, sand_vector);
+% 
+% kk_ma_middle = nan(npool_vr, npool_vr, month_num);
+% tri_ma_middle = nan(npool_vr, npool_vr, month_num);
+% for imonth = 1:month_num
+%     % decomposition matrix
+%     monthly_xit = xit(:, imonth);
+%     monthly_xiw = xiw(:, imonth);
+%     monthly_xio = xio(:, imonth);
+%     monthly_xin = xin(:, imonth);
+%     
+% 	monthly_xiw(monthly_xiw < 0.05) = 0.05;
+% 
+% 	kk_ma_middle(:, :, imonth) = kk_matrix(monthly_xit, monthly_xiw, monthly_xio, monthly_xin, efolding, tau4cwd, tau4l1, tau4l2, tau4l3, tau4s1, tau4s2, tau4s3);
+%     % tri matrix
+%     monthly_nbedrock = nbedrock_steady_state;
+%     monthly_altmax_current_profile = mean(altmax_current_profile_steady_state(imonth:month_num:end));
+%     monthly_altmax_lastyear_profile = mean(altmax_lastyear_profile_steady_state(imonth:month_num:end));
+%     tri_ma_middle(:, :, imonth) = tri_matrix(monthly_nbedrock, monthly_altmax_current_profile, monthly_altmax_lastyear_profile, bio, adv, cryo);
+% end
+% tri_ma = mean(tri_ma_middle, 3, 'omitnan');
+% kk_ma = mean(kk_ma_middle, 3, 'omitnan');
+% 
+% %----------------------------------------
+% % Vertical Profile
+% %----------------------------------------
+% % in the original beta model in Jackson et al 1996, the unit for the depth
+% % of the soil is cm (dmax*100)
+% 
+% m_to_cm = 100;
+% vertical_prof = nan(n_soil_layer, 1);
+% 
+% if mean(altmax_lastyear_profile_steady_state) > 0
+%     for j = 1:n_soil_layer
+%         if j == 1
+%             vertical_prof(j) = (beta^((zisoi_0)*m_to_cm) - beta^(zisoi(j)*m_to_cm))/dz(j);
+%         else
+%             vertical_prof(j) = (beta^((zisoi(j - 1))*m_to_cm) - beta^(zisoi(j)*m_to_cm))/dz(j);
+%         end
+%     end
+% else
+%     vertical_prof(1) = 1/dz(1);
+%     vertical_prof(2:end) = 0;
+% end
+% 
+% vertical_input = dz(1:n_soil_layer).*vertical_prof/sum(vertical_prof.*dz(1:n_soil_layer));
+% %----------------------------------------
+% % Analytical Solution of SOC
+% %----------------------------------------
+% matrix_in=nan(140,1);
+% % total input amount
+% input_tot_cwd = p4cwd*npp_annual_steady_state/days_per_year; % (gc/m2/day)
+% input_tot_litter1 = p4l1*npp_annual_steady_state/days_per_year; % (gc/m2/day)
+% input_tot_litter2 = p4l2*npp_annual_steady_state/days_per_year; % (gc/m2/day)
+% input_tot_litter3 = p4l3*npp_annual_steady_state/days_per_year; % (gc/m2/day)
+% 
+% % redistribution by beta
+% matrix_in(1:20,1) = input_tot_cwd*vertical_input./dz(1:n_soil_layer); % litter input gc/m3/day
+% matrix_in(21:40,1) = input_tot_litter1*vertical_input./dz(1:n_soil_layer);
+% matrix_in(41:60,1) = input_tot_litter2*vertical_input./dz(1:n_soil_layer);
+% matrix_in(61:80,1) = input_tot_litter3*vertical_input./dz(1:n_soil_layer);
+% matrix_in(81:140,1) = 0;
+% 
+% input_matrix(1:20,1) = p4cwd.*vertical_input./dz(1:n_soil_layer);
+% input_matrix(21:40,1) = p4l1.*vertical_input./dz(1:n_soil_layer);
+% input_matrix(41:60,1) = p4l2.*vertical_input./dz(1:n_soil_layer);
+% input_matrix(61:80,1) = p4l3.*vertical_input./dz(1:n_soil_layer);
+% input_matrix(81:140,1) = 0;
+% 
+% lastwarn('');
+% 
+% cpool_steady_state = (a_ma*kk_ma-tri_ma)\(-matrix_in);
+% cpool_steady_state(cpool_steady_state < 0) = 0;
+% [~, msgid] = lastwarn;
+% if strcmp(msgid, 'MATLAB:singularMatrix') == 1 || strcmp(msgid, 'MATLAB:nearlySingularMatrix') == 1
+%     cpools_transient = nan;
+%     soc_stock_transient = nan;
+%     litter_stock_transient = nan;
+%     cwd_stock_transient = nan;
+%     tot_hr = nan;
+%     
+%     return
+% end
+% 
+% initial_cpool(:, 1) = cpool_steady_state;
 %% transient simulation
-
 % soc related variables
 cpools_transient = nan(year_size*month_num, npool*n_soil_layer);
 soc_stock_transient = nan(year_size*month_num, 1);

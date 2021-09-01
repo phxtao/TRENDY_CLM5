@@ -1,6 +1,7 @@
-% clear;
-% clc;
-grid_num = 5;
+clear;
+clc;
+grid_num = 1;
+worker_num = 6;
 %%
 
 % worker_num = 6;
@@ -79,9 +80,9 @@ trendy_year_start = 1700;
 trendy_year_end = 2019;
 trendy_time_series = (trendy_year_start+1/month_num:1/month_num:(trendy_year_end+1))';
 
-time_loop = 320;
+time_loop = 319;
 time_gap = 321;
-da_year_start = 1700:(time_gap-1):2019;
+da_year_start = 1701:(time_gap-1):2019;
 da_year_end = da_year_start+time_loop-1;
 period_num = length(da_year_start);
 
@@ -142,7 +143,8 @@ initial_cwd = initial_cwd.var_data_grid;
 initial_cpool_total = [initial_cwd; initial_litter1; initial_litter2; initial_litter3; initial_soc1; initial_soc2; initial_soc3];
 
 initial_cpool = nan(soil_cpool_num*soil_decom_num, length(da_start_loc));
-initial_cpool(:, 2:end) = initial_cpool_total(:, da_start_loc(2:end)-1);
+% initial_cpool(:, 2:end) = initial_cpool_total(:, da_start_loc(2:end)-1);
+initial_cpool(:, 1:end) = initial_cpool_total(:, da_start_loc(1:end)-1);
 %% Data Assimilation - initiation
 % Parameter names and their initial values in MCMC
 para_name = {'diffus'; 'cryo';...
@@ -185,10 +187,10 @@ end
 disp([datestr(now,'HH:MM:SS'), ' MCMC started'])
 %     try
 % Predefine the size of some coefficients
-nsimu1 = 5000;
-nsimu2 = 10000;
+nsimu1 = 10000;
+nsimu2 = 50000;
 
-for iworker = 1%:worker_num
+for iworker = 1:worker_num
     rng(iworker);
     is_second_time = 0;
     parameters_rec1 = nan(npara, nsimu1);
@@ -273,7 +275,7 @@ for iworker = 1%:worker_num
             disp([datestr(now,'HH:MM:SS'), ' upgrade1 iworker ', num2str(iworker), ': ', num2str(upgrade1), ' out of ', num2str(simu), ' cost: ', num2str(cost_new)]);
             
             % record accepted parameter values
-             parameters_keep1(:, upgrade1) = par_new;
+            parameters_keep1(:, upgrade1) = par_new;
             % record accepted values of cost function
             cost_keep1(upgrade1, 1)=cost_new;
             % update the value of parameter values
@@ -312,7 +314,7 @@ for iworker = 1%:worker_num
     %----------------------------------------
     % Part 2: MCMC run with updating covariances
     %----------------------------------------
-    sd_controling_factor = 0.4; % 2.4; % default to be 2.4^2
+    sd_controling_factor = 0.6; % 2.4; % default to be 2.4^2
     sd = sd_controling_factor/npara;
     epsilon = 0;
     covars=sd*cov(parameters_rec1(:, 1:nsimu1)') + sd*epsilon*diag(ones(npara, 1));

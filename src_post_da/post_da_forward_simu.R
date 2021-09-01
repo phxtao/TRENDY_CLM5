@@ -24,7 +24,7 @@ month_num = 12
 trendy_time_series = seq(from = (year_start+1/month_num), to = (year_end+1), by = 1/month_num)
 
 
-igrid = 3
+igrid = 1
 for (igrid in 1:grid_num) {
   # original simulated soc, unit kgc/m2
   obs_tot_soc_transient = readMat(paste(data_path, 'trendy_clm5/input_data/grid_s3/grid_', igrid, '_trendy2020_clm5_', scenario_name, '_TOTSOMC_170001_201912.mat', sep = ''))
@@ -39,6 +39,8 @@ for (igrid in 1:grid_num) {
   obs_tot_hr_transient = readMat(paste(data_path, 'trendy_clm5/input_data/grid_s3/grid_', igrid, '_trendy2020_clm5_', scenario_name, '_HR_170001_201912.mat', sep = ''))
   obs_tot_hr_transient = t(obs_tot_hr_transient$var.data.grid)*365*24*60*60
   
+  obs_tot_oc = obs_tot_soc_transient + obs_tot_litter_transient + obs_tot_cwd_transient
+    
   iworker = 1
   post_da_ensemble_soc = c()
   post_da_ensemble_litter = c()
@@ -51,9 +53,50 @@ for (igrid in 1:grid_num) {
     post_da_ensemble_litter = cbind(post_da_ensemble_litter, post_da_ensemble_middle[[2]]/1000)
     post_da_ensemble_cwd = cbind(post_da_ensemble_cwd, post_da_ensemble_middle[[3]]/1000)
     post_da_ensemble_hr = cbind(post_da_ensemble_hr, post_da_ensemble_middle[[4]]*365*24*60*60)
+    
+    post_da_ensemble_oc = post_da_ensemble_soc + post_da_ensemble_litter + post_da_ensemble_cwd
   }
   
   color_scheme = c('#005AB5', '#DC3220')
+  
+  
+  ##############plot total organic carbon transient
+  current_data = data.frame(rbind(cbind(trendy_time_series, 
+                                        obs_tot_oc, 
+                                        NA, 
+                                        NA,
+                                        1), 
+                                  cbind(trendy_time_series, 
+                                        apply(post_da_ensemble_oc, 1, mean, na.rm = TRUE),
+                                        apply(post_da_ensemble_oc, 1, quantile, probs = 0.05, na.rm = TRUE),
+                                        apply(post_da_ensemble_oc, 1, quantile, probs = 0.95, na.rm = TRUE), 
+                                        2)))
+  
+  colnames(current_data) = c('time', 'simu', 'lower', 'upper', 'source')
+  
+  p_oc_transient = 
+    ggplot() + 
+    geom_line(data = current_data, aes(x = time, y = simu, color = as.factor(source)), size = 1.5) +
+    geom_ribbon(data = current_data, aes(x = time, y = simu, ymin = lower, ymax = upper, color = NA, fill = as.factor(source)), alpha = 0.3) + 
+    scale_color_manual(name = '', values = color_scheme, labels = c('CLM5 default', 'Data assimilation')) +
+    scale_fill_manual(name = '', values = color_scheme, labels = c('CLM5 default', 'Data assimilation')) +
+    scale_y_continuous(position = 'left') +
+    theme_classic() +
+    # theme(legend.position = 'None') + 
+    theme(legend.justification = c(0, 1), legend.position = c(0, 1), legend.background = element_rect(fill = NA), legend.text.align = 0) +
+    theme(legend.text = element_text(size = 30), legend.title = element_text(size = 25))  +
+    theme(legend.key = element_rect(color = NA, fill = NA), legend.key.size = unit(1, 'inch')) +
+    # add title
+    labs(title = '', y = expression(paste('Total OC stock (kg C m'^'-2', ')', sep = '')), x = 'Time (Year)') +
+    # modify the position of title
+    # modify the font sizea
+    theme(plot.title = element_text(hjust = 0.8, vjust = -40, size = 30)) + 
+    theme(axis.title = element_text(size = 32), axis.line = element_line(size = 1), axis.ticks = element_line(size = 1)) +
+    # modify the margin
+    theme(plot.margin = unit(c(0, 0.4, 0.1, 0.1), 'inch')) +
+    theme(axis.text = element_text(size=35)) 
+  
+  
   
   ##############plot soc transient
   current_data = data.frame(rbind(cbind(trendy_time_series, 
@@ -295,12 +338,17 @@ for (igrid in 1:grid_num) {
     theme(axis.text = element_text(size=35)) 
   
   
-  jpeg(paste('./figures/post_da_simu_', igrid, '.jpeg', sep = ''), width = 50, height = 20, units = 'in', res = 300)
-  plot_grid(p_soc_transient, p_soc_regression, p_litter_transient, p_litter_regression, 
+  jpeg(paste('./figures/post_da_simu_grid_', igrid, '.jpeg', sep = ''), width = 50, height = 20, units = 'in', res = 300)
+  print(plot_grid(p_soc_transient, p_soc_regression, p_litter_transient, p_litter_regression, 
             p_cwd_transient, p_cwd_regression, p_hr_transient, p_hr_regression, 
             rel_widths = c(3, 2, 3, 2),
-            nrow = 2)
+            nrow = 2))
   dev.off()
+  
+  jpeg(paste('./figures/post_da_simu_tot_oc_grid_', igrid, '.jpeg', sep = ''), width = 15, height = 10, units = 'in', res = 300)
+  print(p_oc_transient)
+  dev.off()
+  
 }
 
 
