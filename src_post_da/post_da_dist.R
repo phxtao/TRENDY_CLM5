@@ -34,7 +34,7 @@ npara = length(para_names)
 
 ################ tier individual
 igrid = 3
-for (igrid in 3) { 
+for (igrid in 1:grid_num) { 
   # Gelman-Rubin test
   GR = array(NA, c(npara, 1))
   between_var = array(NA, c(npara, 1))

@@ -1,5 +1,5 @@
-% clear;
-% clc;
+clear;
+clc;
 %%
 
 warning('off');
@@ -10,15 +10,15 @@ disp([datestr(now,'HH:MM:SS'), ' programme started'])
 grid_num = 7;
 
 
-% model_src_dir = '/Users/phoenix/Google_Drive/Tsinghua_Luo/Projects/TRENDY_CLM5/src_clm_cen';
-model_src_dir = '/GFPS8p/cess11/taof/trendy_clm5/src_clm_cen';
+model_src_dir = '/Users/phoenix/Google_Drive/Tsinghua_Luo/Projects/TRENDY_CLM5/src_clm_cen';
+% model_src_dir = '/GFPS8p/cess11/taof/trendy_clm5/src_clm_cen';
 cd(model_src_dir)
 
 % mac
-% data_path = '/Users/phoenix/Google_Drive/Tsinghua_Luo/Projects/DATAHUB/';
+data_path = '/Users/phoenix/Google_Drive/Tsinghua_Luo/Projects/DATAHUB/';
 
 % server 
-data_path = '/GFPS8p/cess11/taof/datahub/';
+% data_path = '/GFPS8p/cess11/taof/datahub/';
 
 %% simulations from CLM5
 cesm2_case_name = 'sasu_f05_g16_checked_step4';

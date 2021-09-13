@@ -18,7 +18,7 @@ grid_num = 10
 worker_num = 6
 
 data_path = '/Users/phoenix/Google_Drive/Tsinghua_Luo/Projects/DATAHUB/'
-year_start = 1700
+year_start = 1701
 year_end = 2019
 month_num = 12
 trendy_time_series = seq(from = (year_start+1/month_num), to = (year_end+1), by = 1/month_num)
@@ -29,15 +29,19 @@ for (igrid in 1:grid_num) {
   # original simulated soc, unit kgc/m2
   obs_tot_soc_transient = readMat(paste(data_path, 'trendy_clm5/input_data/grid_s3/grid_', igrid, '_trendy2020_clm5_', scenario_name, '_TOTSOMC_170001_201912.mat', sep = ''))
   obs_tot_soc_transient = t(obs_tot_soc_transient$var.data.grid)/1000
+  obs_tot_soc_transient = obs_tot_soc_transient[13:(12+length(trendy_time_series))]
   # original simulated litter, unit kgc/m2
   obs_tot_litter_transient = readMat(paste(data_path, 'trendy_clm5/input_data/grid_s3/grid_', igrid, '_trendy2020_clm5_', scenario_name, '_TOTLITC_170001_201912.mat', sep = ''))
   obs_tot_litter_transient = t(obs_tot_litter_transient$var.data.grid)/1000
+  obs_tot_litter_transient = obs_tot_litter_transient[13:(12+length(trendy_time_series))]
   # original simulated cwdc, unit kgc/m2
   obs_tot_cwd_transient = readMat(paste(data_path, 'trendy_clm5/input_data/grid_s3/grid_', igrid, '_trendy2020_clm5_', scenario_name, '_CWDC_170001_201912.mat', sep = ''))
   obs_tot_cwd_transient = t(obs_tot_cwd_transient$var.data.grid)/1000
+  obs_tot_cwd_transient = obs_tot_cwd_transient[13:(12+length(trendy_time_series))]
   # original simulated heterotrophic respiration, unit gc/m2/year
   obs_tot_hr_transient = readMat(paste(data_path, 'trendy_clm5/input_data/grid_s3/grid_', igrid, '_trendy2020_clm5_', scenario_name, '_HR_170001_201912.mat', sep = ''))
   obs_tot_hr_transient = t(obs_tot_hr_transient$var.data.grid)*365*24*60*60
+  obs_tot_hr_transient = obs_tot_hr_transient[13:(12+length(trendy_time_series))]
   
   obs_tot_oc = obs_tot_soc_transient + obs_tot_litter_transient + obs_tot_cwd_transient
     

@@ -13,18 +13,18 @@ model_src_dir = '/Users/phoenix/Google_Drive/Tsinghua_Luo/Projects/TRENDY_CLM5/s
 cd(model_src_dir)
 
 %% forward simulations
-% for igrid = 3
-%     valid_post_para = nan(50000, 22, 6);
-%     for iworker = 1:worker_num
-%         post_para = load([data_path, 'trendy_clm5/output_data/da_reconstruct/trendy_clm5_s3_point_', num2str(igrid), '_reconstruct_worker_', num2str(iworker), '_parameters_keep2.mat']);
-%         post_para = post_para.parameters_keep2';
-%         valid_num = length(find(isnan(post_para(:, 1)) == 0));
-%         
-%         valid_post_para(1:length(round(valid_num/2):valid_num), :, iworker) = post_para(round(valid_num/2):valid_num, :);
-%     end
-%     save([data_path, 'trendy_clm5/output_data/da_reconstruct/trendy_clm5_s3_point_', num2str(igrid), '_reconstruct_valid_post_para.mat']);
-%     
-% end 
+for igrid = 1:grid_num
+    valid_post_para = nan(50000, 22, 6);
+    for iworker = 1:worker_num
+        post_para = load([data_path, 'trendy_clm5/output_data/da_reconstruct/trendy_clm5_s3_point_', num2str(igrid), '_reconstruct_worker_', num2str(iworker), '_parameters_keep2.mat']);
+        post_para = post_para.parameters_keep2';
+        valid_num = length(find(isnan(post_para(:, 1)) == 0));
+        
+        valid_post_para(1:length(round(valid_num/2):valid_num), :, iworker) = post_para(round(valid_num/2):valid_num, :);
+    end
+    save([data_path, 'trendy_clm5/output_data/da_reconstruct/trendy_clm5_s3_point_', num2str(igrid), '_reconstruct_valid_post_para.mat']);
+    
+end 
 
 
 %% forward simulations
@@ -62,7 +62,7 @@ da_time_series = trendy_time_series(selected_loc);
 input_var_list = {'ALTMAX', 'FPI', 'NPP', 'O_SCALAR', 'W_SCALAR', 'T_SCALAR'};
 
 for ivar = 1:length(input_var_list)
-    load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(grid_num), '_trendy2020_clm5_', scenario_name, '_', input_var_list{ivar}, '_170001_201912.mat']);
+    load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(igrid), '_trendy2020_clm5_', scenario_name, '_', input_var_list{ivar}, '_170001_201912.mat']);
     
     eval(['frocing_transient.', input_var_list{ivar}, ' = var_data_grid(:, selected_loc);']);
     eval(['frocing_steady_state.', input_var_list{ivar}, ' = var_data_grid(:, 1:20*month_num);']);
@@ -74,32 +74,32 @@ frocing_steady_state.ALTMAX_LAST_YEAR = [frocing_steady_state.ALTMAX(1), frocing
 frocing_steady_state.nbedrock = nbedrock;
 
 % original simulated soc, unit gc/m2
-obs_tot_soc_transient = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(grid_num), '_trendy2020_clm5_', scenario_name, '_TOTSOMC_170001_201912.mat']);
+obs_tot_soc_transient = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(igrid), '_trendy2020_clm5_', scenario_name, '_TOTSOMC_170001_201912.mat']);
 obs_tot_soc_transient = obs_tot_soc_transient.var_data_grid(selected_loc);
 % original simulated litter, unit gc/m2
-obs_tot_litter_transient = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(grid_num), '_trendy2020_clm5_', scenario_name, '_TOTLITC_170001_201912.mat']);
+obs_tot_litter_transient = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(igrid), '_trendy2020_clm5_', scenario_name, '_TOTLITC_170001_201912.mat']);
 obs_tot_litter_transient = obs_tot_litter_transient.var_data_grid(selected_loc);
 % original simulated cwdc, unit gc/m2
-obs_tot_cwd_transient = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(grid_num), '_trendy2020_clm5_', scenario_name, '_CWDC_170001_201912.mat']);
+obs_tot_cwd_transient = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(igrid), '_trendy2020_clm5_', scenario_name, '_CWDC_170001_201912.mat']);
 obs_tot_cwd_transient = obs_tot_cwd_transient.var_data_grid(selected_loc);
 % original simulated heterotrophic respiration, unit gc/m2/s
-obs_tot_hr_transient = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(grid_num), '_trendy2020_clm5_', scenario_name, '_HR_170001_201912.mat']);
+obs_tot_hr_transient = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(igrid), '_trendy2020_clm5_', scenario_name, '_HR_170001_201912.mat']);
 obs_tot_hr_transient = obs_tot_hr_transient.var_data_grid(selected_loc);
 
 % initial cabron pool sizes at the beginning of transient simulation, unit gc/m3
-initial_soc1 = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(grid_num), '_trendy2020_clm5_', scenario_name, '_SOIL1C_vr_170001_201912.mat']);
+initial_soc1 = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(igrid), '_trendy2020_clm5_', scenario_name, '_SOIL1C_vr_170001_201912.mat']);
 initial_soc1 = initial_soc1.var_data_grid;
-initial_soc2 = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(grid_num), '_trendy2020_clm5_', scenario_name, '_SOIL2C_vr_170001_201912.mat']);
+initial_soc2 = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(igrid), '_trendy2020_clm5_', scenario_name, '_SOIL2C_vr_170001_201912.mat']);
 initial_soc2 = initial_soc2.var_data_grid;
-initial_soc3 = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(grid_num), '_trendy2020_clm5_', scenario_name, '_SOIL3C_vr_170001_201912.mat']);
+initial_soc3 = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(igrid), '_trendy2020_clm5_', scenario_name, '_SOIL3C_vr_170001_201912.mat']);
 initial_soc3 = initial_soc3.var_data_grid;
-initial_litter1 = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(grid_num), '_trendy2020_clm5_', scenario_name, '_LITR1C_vr_170001_201912.mat']);
+initial_litter1 = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(igrid), '_trendy2020_clm5_', scenario_name, '_LITR1C_vr_170001_201912.mat']);
 initial_litter1 = initial_litter1.var_data_grid;
-initial_litter2 = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(grid_num), '_trendy2020_clm5_', scenario_name, '_LITR2C_vr_170001_201912.mat']);
+initial_litter2 = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(igrid), '_trendy2020_clm5_', scenario_name, '_LITR2C_vr_170001_201912.mat']);
 initial_litter2 = initial_litter2.var_data_grid;
-initial_litter3 = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(grid_num), '_trendy2020_clm5_', scenario_name, '_LITR3C_vr_170001_201912.mat']);
+initial_litter3 = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(igrid), '_trendy2020_clm5_', scenario_name, '_LITR3C_vr_170001_201912.mat']);
 initial_litter3 = initial_litter3.var_data_grid;
-initial_cwd = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(grid_num), '_trendy2020_clm5_', scenario_name, '_CWDC_vr_170001_201912.mat']);
+initial_cwd = load([data_path, 'trendy_clm5/input_data/grid_s3/grid_', num2str(igrid), '_trendy2020_clm5_', scenario_name, '_CWDC_vr_170001_201912.mat']);
 initial_cwd = initial_cwd.var_data_grid;
 
 initial_cpool_total = [initial_cwd; initial_litter1; initial_litter2; initial_litter3; initial_soc1; initial_soc2; initial_soc3];
