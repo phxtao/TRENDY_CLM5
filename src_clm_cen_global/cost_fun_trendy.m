@@ -48,17 +48,17 @@ for iperiod = 1:period_num
     trans_mod_tot_hr_transient(period_loc) = (middle_mod_tot_hr_transient - mean(middle_obs_tot_hr_transient))./std(middle_obs_tot_hr_transient);
     
 end
-% trans_obs_total = [trans_obs_tot_soc_transient; trans_obs_tot_litter_transient; trans_obs_tot_cwd_transient; trans_obs_tot_hr_transient];
-% trans_mod_total = [trans_mod_tot_soc_transient; trans_mod_tot_litter_transient; trans_mod_tot_cwd_transient; trans_mod_tot_hr_transient];
-%
+trans_obs_total = [trans_obs_tot_soc_transient; trans_obs_tot_litter_transient; trans_obs_tot_cwd_transient; trans_obs_tot_hr_transient];
+trans_mod_total = [trans_mod_tot_soc_transient; trans_mod_tot_litter_transient; trans_mod_tot_cwd_transient; trans_mod_tot_hr_transient];
+
 % cost = nansum(weight_total.*(trans_obs_total - trans_mod_total).^2)*100;
 
 
-unexplained_soc = sum((obs_tot_soc_transient - mod_tot_soc_transient').^2)/sum((obs_tot_soc_transient - mean(obs_tot_soc_transient)).^2);
-unexplained_litter = sum((obs_tot_litter_transient - mod_tot_litter_transient').^2)/sum((obs_tot_litter_transient - mean(obs_tot_litter_transient)).^2);
-unexplained_cwd = sum((obs_tot_cwd_transient - mod_tot_cwd_transient').^2)/sum((obs_tot_cwd_transient - mean(obs_tot_cwd_transient)).^2);
-unexplained_hr = sum((obs_tot_hr_transient - mod_tot_hr_transient').^2)/sum((obs_tot_hr_transient - mean(obs_tot_hr_transient)).^2);
-cost = (unexplained_soc + unexplained_litter + unexplained_cwd + unexplained_hr)*100/4;
+unexplained_soc = sum((obs_tot_soc_transient - mod_tot_soc_transient').^2)/sum((obs_tot_soc_transient - mean(obs_tot_soc_transient)).^2)*100;
+unexplained_litter = sum((obs_tot_litter_transient - mod_tot_litter_transient').^2)/sum((obs_tot_litter_transient - mean(obs_tot_litter_transient)).^2)*100;
+unexplained_cwd = sum((obs_tot_cwd_transient - mod_tot_cwd_transient').^2)/sum((obs_tot_cwd_transient - mean(obs_tot_cwd_transient)).^2)*100;
+unexplained_hr = sum((obs_tot_hr_transient - mod_tot_hr_transient').^2)/sum((obs_tot_hr_transient - mean(obs_tot_hr_transient)).^2)*100;
+cost = (unexplained_soc + unexplained_litter + unexplained_cwd + unexplained_hr)/4;
 
 % plot(trans_obs_tot_soc_transient)
 % hold on

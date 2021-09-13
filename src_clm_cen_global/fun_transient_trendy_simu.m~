@@ -84,7 +84,7 @@ xin_steady_state = frocing_steady_state.FPI;
 xit_steady_state = frocing_steady_state.T_SCALAR;
 xiw_steady_state = frocing_steady_state.W_SCALAR;
 
-decom_fire_steady_state = frocing_steady_state.COL_FIRE_CLOSS*secspday./(frocing_steady_state.TOTLITC + frocing_steady_state.CWDC + frocing_steady_state.TOTVEGC); %unit day-1
+decom_fire_steady_state = frocing_steady_state.COL_FIRE_CLOSS*secspday./(frocing_steady_state.TOTLITC + frocing_steady_state.CWDC); %unit day-1
 
 npp_annual_steady_state = sum(npp_mean_steady_state.*repmat(days_per_month, [1, length(npp_mean_steady_state)/month_num])*secspday)/(length(npp_mean_steady_state)/month_num); % unit: gc/m2/year
 litter_fall_annual_steady_state = sum(litter_fall_steady_state.*repmat(days_per_month, [1, length(litter_fall_steady_state)/month_num])*secspday)/(length(litter_fall_steady_state)/month_num); % unit: gc/m2/year
@@ -98,7 +98,7 @@ sand_vector_transient = nan;
 npp_mean_transient = frocing_transient.NPP;
 litter_fall_transient = frocing_transient.litter_fall;
 
-decom_fire_transient = frocing_transient.COL_FIRE_CLOSS*secspday./(frocing_transient.TOTLITC + frocing_transient.CWDC + frocing_transient.TOTVEGC); %unit day-1
+decom_fire_transient = frocing_transient.COL_FIRE_CLOSS*secspday./(frocing_transient.TOTLITC + frocing_transient.CWDC); %unit day-1
 
 altmax_current_profile_transient = frocing_transient.ALTMAX;
 altmax_lastyear_profile_transient = frocing_transient.ALTMAX_LAST_YEAR;
@@ -155,18 +155,17 @@ fcwdl2 = kp(18)*(1 - 0.5) + 0.5;
 % beta = 0.95;
 beta = kp(19)*(0.9999 - 0.85) + 0.85;
 
-env_scalar = kp(20)*(2 - 0) + 0;
-
-xi_fire_litter = kp(21)*(2 - 0) + 0;
-xi_fire_cwd = kp(22)*(2 - 0) + 0;
+% env_scalar = kp(20)*(2 - 0) + 0;
+xi_fire_litter = kp(20)*(2 - 0) + 0;
+xi_fire_cwd = kp(21)*(2 - 0) + 0;
 
 % allocation to different litter pools
-p4cwd_initial = kp(23)*(1 - 0.4) + 0.4;
-p4cwd_end = kp(24)*(1 - 0) + 0;
+p4cwd_initial = kp(22)*(1 - 0.4) + 0.4;
+p4cwd_end = kp(23)*(1 - 0) + 0;
 p4cwd_series = p4cwd_initial:(p4cwd_end - p4cwd_initial)/(year_size-1):p4cwd_end;
 
-p4l1 = kp(25)*(1 - 0) + 0;
-p4l2 = kp(26)*(1 - 0) + 0;
+p4l1 = kp(24)*(1 - 0) + 0;
+p4l2 = kp(25)*(1 - 0) + 0;
 
 p4l3 = 1 - p4l1 - p4l2;
 
@@ -189,7 +188,7 @@ for imonth = 1:month_num
 end
 
 %----------------------------------------
-% Triangle Matrix, A Matrix, K Matrix, , Fire Matrix
+% Triangle Matrix, A Matrix and K Matrix
 %----------------------------------------
 sand_vector = mean(sand_vector_steady_state, 2, 'omitnan');
 % Allocation matrix
@@ -205,9 +204,9 @@ for imonth = 1:month_num
     monthly_xio = xio(:, imonth);
     monthly_xin = xin(:, imonth);
     
-    monthly_xiw = monthly_xiw*env_scalar;
-    
-    kk_ma_middle(:, :, imonth) = kk_matrix(monthly_xit, monthly_xiw, monthly_xio, monthly_xin, efolding, tau4cwd, tau4l1, tau4l2, tau4l3, tau4s1, tau4s2, tau4s3);
+	monthly_xiw = monthly_xiw; % *env_scalar;
+
+	kk_ma_middle(:, :, imonth) = kk_matrix(monthly_xit, monthly_xiw, monthly_xio, monthly_xin, efolding, tau4cwd, tau4l1, tau4l2, tau4l3, tau4s1, tau4s2, tau4s3);
     % tri matrix
     monthly_nbedrock = nbedrock_steady_state;
     monthly_altmax_current_profile = mean(altmax_current_profile_steady_state(imonth:month_num:end));
@@ -215,12 +214,19 @@ for imonth = 1:month_num
     tri_ma_middle(:, :, imonth) = tri_matrix(monthly_nbedrock, monthly_altmax_current_profile, monthly_altmax_lastyear_profile, bio, adv, cryo);
     
     % fire matrix
-    fire_vector = [xi_fire_cwd*decom_fire_steady_state(imonth)*ones(n_soil_layer, 1); xi_fire_litter*decom_fire_steady_state(imonth)*ones(3*n_soil_layer, 1); zeros(3*n_soil_layer, 1)];
-    fire_ma_middle(:, :, imonth) = diag(fire_vector);
+    fire_vector = xi_fire_cwd*decom_fire_steady_state(imonth)*ones(n_soil_layer, 1)
 end
 tri_ma = mean(tri_ma_middle, 3, 'omitnan');
 kk_ma = mean(kk_ma_middle, 3, 'omitnan');
-fire_ma = mean(fire_ma_middle, 3, 'omitnan');
+
+%----------------------------------------
+% Fire Matrix
+%----------------------------------------
+fire_vector = decom_fire_steady_state
+
+zeros(npool_vr)
+
+
 %----------------------------------------
 % Vertical Profile
 %----------------------------------------
@@ -269,7 +275,7 @@ input_matrix(81:140,1) = 0;
 
 lastwarn('');
 
-cpool_steady_state = (a_ma*kk_ma-tri_ma-fire_ma)\(-matrix_in);
+cpool_steady_state = (a_ma*kk_ma-tri_ma)\(-matrix_in);
 cpool_steady_state(cpool_steady_state < 0) = 0;
 [~, msgid] = lastwarn;
 if strcmp(msgid, 'MATLAB:singularMatrix') == 1 || strcmp(msgid, 'MATLAB:nearlySingularMatrix') == 1
@@ -305,12 +311,12 @@ for iyear = 1 : year_size
         month_loc = (iyear-1)*month_num+imonth;
         
         xit(:, 1) = xit_transient(:, month_loc);
-        xiw(:, 1) = xiw_transient(:, month_loc)*env_scalar;
+        xiw(:, 1) = xiw_transient(:, month_loc); % *env_scalar;
         xin(:, 1) = xin_transient(:, month_loc);
         xio(:, 1) = xio_transient(:, month_loc);
         
         %----------------------------------------
-        % Triangle Matrix, A Matrix, K Matrix, Fire Matrix
+        % Triangle Matrix, A Matrix and K Matrix
         %----------------------------------------
         % Allocation matrix
         a_ma = a_matrix(is_default, fl1s1, fl2s1, fl3s2, fs1s2, fs1s3, fs2s1, fs2s3, fs3s1, fcwdl2, sand_vector_transient);
@@ -318,10 +324,6 @@ for iyear = 1 : year_size
         kk_ma = kk_matrix(xit, xiw, xio, xin, efolding, tau4cwd, tau4l1, tau4l2, tau4l3, tau4s1, tau4s2, tau4s3);
         % tri matrix
         tri_ma = tri_matrix(nbedrock_transient, altmax_current_profile_transient(month_loc), altmax_lastyear_profile_transient(month_loc), bio, adv, cryo);
-        
-        % fire matrix
-        fire_vector = [xi_fire_cwd*decom_fire_transient(month_loc)*ones(n_soil_layer, 1); xi_fire_litter*decom_fire_transient(month_loc)*ones(3*n_soil_layer, 1); zeros(3*n_soil_layer, 1)];
-        fire_ma = diag(fire_vector);
         
         %----------------------------------------
         % Vertical Profile
@@ -376,7 +378,7 @@ for iyear = 1 : year_size
         %----------------------------------------
         % soc stepwise iteration
         %----------------------------------------
-        cpools_next = (matrix_in + (a_ma*kk_ma-tri_ma-fire_ma)*current_cpool)*days_per_month(imonth) + current_cpool;
+        cpools_next = (matrix_in + (a_ma*kk_ma-tri_ma)*current_cpool)*days_per_month(imonth) + current_cpool;
         
         %         residence_time = ((a_ma*kk_ma - tri_ma)\(-input_matrix))/days_per_year;
         %         residence_time_layer =  sum([residence_time(81:100), residence_time(101:120), residence_time(121:140)], 2); % unit yr

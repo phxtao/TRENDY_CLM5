@@ -14,7 +14,7 @@ disp([datestr(now,'HH:MM:SS'), ' programme started'])
 scenario_name = 'S3_CO2ClimateLUC_Matrix';
 
 model_src_dir = '/Users/phoenix/Google_Drive/Tsinghua_Luo/Projects/TRENDY_CLM5/src_clm_cen_global';
-% model_src_dir = '/GFPS8p/cess11/taof/trendy_clm5/src_clm_cen';
+% model_src_dir = '/GFPS8p/cess11/taof/trendy_clm5/src_clm_cen_global';
 cd(model_src_dir)
 
 % mac
@@ -98,7 +98,7 @@ da_time_series = trendy_time_series(selected_loc);
 load([data_path, 'trendy_clm5/input_data/trendy_clm5_global_s3_matrix/global_trendy2020_clm5_land_area.mat']);
 global_land_area = sum(sum(land_area, 'omitnan'), 'omitnan'); % unit m2
 % load simulation from TRENDY CLM5
-input_var_list = {'ALTMAX', 'FPI', 'NPP', 'TOTVEGC', 'O_SCALAR', 'W_SCALAR', 'T_SCALAR', 'COL_FIRE_CLOSS'};
+input_var_list = {'ALTMAX', 'FPI', 'NPP', 'TOTVEGC', 'O_SCALAR', 'W_SCALAR', 'T_SCALAR', 'COL_FIRE_CLOSS', 'TOTLITC', 'CWDC'};
 
 for ivar = 1:length(input_var_list)
     load([data_path, 'trendy_clm5/input_data/trendy_clm5_global_s3_matrix/global_trendy2020_clm5_', scenario_name, '_', input_var_list{ivar}, '_170001_201912.mat']);
@@ -161,6 +161,7 @@ para_name = {'diffus'; 'cryo';...
     'fl1s1'; 'fl2s1'; 'fl3s2'; 'fs1s2'; 'fs1s3'; 'fs2s1'; 'fs2s3'; 'fs3s1'; 'fcwdl2';...
     'beta'; ...
     'env_scalar'; ...
+    'xi_fire_litter'; 'xi_fire_cwd'; ...
     'p4cwd_initial'; 'p4cwd_end'; ...
     'p4l1'; 'p4l2' ...
     };
