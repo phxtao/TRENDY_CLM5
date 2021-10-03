@@ -1,4 +1,4 @@
-function [cpools_transient, soc_stock_transient, litter_stock_transient, cwd_stock_transient, tot_hr] = fun_transient_trendy_simu(kp, year_start, year_end, initial_cpool, frocing_steady_state, frocing_transient)
+function [cpools_transient, soc_stock_transient, litter_stock_transient, cwd_stock_transient, tot_hr, cap_soc_transient, cap_litter_transient, cap_cwd_transient] = fun_transient_trendy_simu(kp, year_start, year_end, initial_cpool, frocing_steady_state, frocing_transient)
 %-------------------------------------
 % constants
 %-------------------------------------
@@ -290,6 +290,11 @@ soc_stock_transient = nan(year_size*month_num, 1);
 litter_stock_transient = nan(year_size*month_num, 1);
 cwd_stock_transient = nan(year_size*month_num, 1);
 tot_hr = nan(year_size*month_num, 1);
+
+cap_soc_transient = nan(year_size*month_num, 1);
+cap_litter_transient = nan(year_size*month_num, 1);
+cap_cwd_transient = nan(year_size*month_num, 1);
+
 % env. scalars
 xit = nan(n_soil_layer, 1);
 xiw = nan(n_soil_layer, 1);
@@ -377,6 +382,8 @@ for iyear = 1 : year_size
         % soc stepwise iteration
         %----------------------------------------
         cpools_next = (matrix_in + (a_ma*kk_ma-tri_ma-fire_ma)*current_cpool)*days_per_month(imonth) + current_cpool;
+        cap_cpools = (a_ma*kk_ma-tri_ma-fire_ma)\(-matrix_in);
+        cap_cpools(cap_cpools < 0) = 0;
         
         %         residence_time = ((a_ma*kk_ma - tri_ma)\(-input_matrix))/days_per_year;
         %         residence_time_layer =  sum([residence_time(81:100), residence_time(101:120), residence_time(121:140)], 2); % unit yr
@@ -386,16 +393,24 @@ for iyear = 1 : year_size
         %         residence_time_total = sum(residence_time_layer.*dz(1:n_soil_layer));
         
         soc_layer = sum([cpools_next(81:100), cpools_next(101:120), cpools_next(121:140)], 2); % unit: g c/m3
+        cap_soc_layer = sum([cap_cpools(81:100), cap_cpools(101:120), cap_cpools(121:140)], 2); % unit: g c/m3
         %         soc_stock_30cm = sum(soc_layer(1:4).*dz(1:4)) + soc_layer(5)*dz(5)*(0.3 - zisoi(4))/(zisoi(5) - zisoi(4)); % unit gc/m2
         %         soc_stock_100cm = sum(soc_layer(1:8).*dz(1:8)) + soc_layer(9)*dz(9)*(1 - zisoi(8))/(zisoi(9) - zisoi(8)); % unit gc/m2
         %         soc_stock_200cm = sum(soc_layer(1:11).*dz(1:11)) + soc_layer(12)*dz(12)*(2 - zisoi(11))/(zisoi(12) - zisoi(11)); % unit gc/m2
         soc_stock_total = sum(soc_layer.*dz(1:n_soil_layer)); % unit gc/m2
+        cap_soc_total = sum(cap_soc_layer.*dz(1:n_soil_layer)); % unit gc/m2
         
         litter_layer = sum([cpools_next(21:40), cpools_next(41:60), cpools_next(61:80)], 2); % unit: g c/m3
+        cap_litter_layer = sum([cap_cpools(21:40), cap_cpools(41:60), cap_cpools(61:80)], 2); % unit: g c/m3
+        
         cwd_layer = cpools_next(1:20); % unit: g c/m3
+        cap_cwd_layer = cap_cpools(1:20); % unit: g c/m3
         
         litter_stock_total = sum(litter_layer.*dz(1:n_soil_layer)); % unit gc/m2
+        cap_litter_total = sum(cap_litter_layer.*dz(1:n_soil_layer)); % unit gc/m2
+        
         cwd_stock_total = sum(cwd_layer.*dz(1:n_soil_layer)); % unit gc/m2
+        cap_cwd_total = sum(cap_cwd_layer.*dz(1:n_soil_layer)); % unit gc/m2
         %----------------------------------------
         % respired soc
         %----------------------------------------
@@ -407,6 +422,13 @@ for iyear = 1 : year_size
             respired_cpools(81:100), respired_cpools(101:120), respired_cpools(121:140)];
         respired_layers = sum(respired_layers, 2); % unit: gc m-3 month-1
         respired_total = sum(respired_layers.*dz(1:n_soil_layer))/days_per_month(imonth)/secspday; % unit: gc m-2 sec-1
+        
+        %----------------------------------------
+        % carbon storage capacity update
+        %----------------------------------------
+        cap_soc_transient((iyear-1)*12+imonth, :) = cap_soc_total;
+        cap_litter_transient((iyear-1)*12+imonth, :) = cap_litter_total;
+        cap_cwd_transient((iyear-1)*12+imonth, :) = cap_cwd_total;
         
         %----------------------------------------
         % carbon pool update
