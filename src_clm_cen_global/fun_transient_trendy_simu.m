@@ -270,6 +270,9 @@ input_matrix(81:140,1) = 0;
 lastwarn('');
 
 cpool_steady_state = (a_ma*kk_ma-tri_ma-fire_ma)\(-matrix_in);
+cpool_residence_time = (a_ma*kk_ma-tri_ma-fire_ma)\(-input_matrix);
+
+
 cpool_steady_state(cpool_steady_state < 0) = 0;
 [~, msgid] = lastwarn;
 if strcmp(msgid, 'MATLAB:singularMatrix') == 1 || strcmp(msgid, 'MATLAB:nearlySingularMatrix') == 1

@@ -175,7 +175,7 @@ para_max = ones(npara, 1);
 % clear warning info
 valid_para = 0;
 while valid_para == 0
-    para0 = rand(npara,1);
+    para0 = ones(npara,1)*0.2; %rand(npara,1);
     
     if sum(para0(end-2:end)) < 1
         lastwarn('');
